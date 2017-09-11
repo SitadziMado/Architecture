@@ -2,6 +2,7 @@
 
 #include <iosfwd>
 #include <locale>
+#include <clocale>
 
 int main()
 {
