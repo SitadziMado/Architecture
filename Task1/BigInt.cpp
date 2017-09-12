@@ -1,6 +1,12 @@
 #include "stdafx.h"
 #include "BigInt.h"
 
+#include <cassert>
+
+#include <algorithm>
+#include <stdexcept>
+#include <utility>
+
 BigUint::BigUint()
 {
 }
@@ -15,7 +21,7 @@ BigUint& BigUint::operator+=(const BigUint& rhs)
     while (ldata.size() < rdata.size())
         ldata.push_back(NumericT());
 
-    for (int i = 0; i < rdata.size(); ++i)
+    for (size_t i = 0; i < rdata.size(); ++i)
     {
         ldata[i] += rdata[i];
         carry(ldata, i);
@@ -35,7 +41,7 @@ BigUint& BigUint::operator-=(const BigUint& rhs)
     auto& ldata = lhs.data_;
     auto& rdata = rhs.data_;
 
-    for (int i = 0; i < rdata.size(); ++i)
+    for (size_t i = 0; i < rdata.size(); ++i)
     {
         auto left = ldata[i];
         auto right = rdata[i];
@@ -59,20 +65,29 @@ BigUint& BigUint::operator-=(const BigUint& rhs)
 BigUint& BigUint::operator*=(const BigUint& rhs)
 {
     BigUint lhs(*this);
+    auto result = BigUint();
 
     auto& ldata = lhs.data_;
     auto& rdata = rhs.data_;
 
-    for (int i = 0; i < ldata.size(); ++i)
-        for (int j = 0; j < rdata.size(); ++j)
-        {
-            ldata[i] *= rdata[j];
-            carry(ldata, i);
-        }
+    for (size_t i = 0; i < ldata.size(); ++i)
+    {
+        auto digit = ldata[i];
+        auto temp = BigUint(lhs);
 
-    data_.swap(ldata);
+        multiply(temp.data_, digit);
+
+        result += temp;
+    }
+
+    data_.swap(result.data_);
 
     return *this;
+}
+
+BigUint & BigUint::operator/=(const BigUint & rhs)
+{
+    throw std::runtime_error("Деление еще не реализовано.");
 }
 
 inline void BigUint::swap(BigUint other) noexcept
@@ -80,24 +95,33 @@ inline void BigUint::swap(BigUint other) noexcept
     data_.swap(other.data_);
 }
 
+// Функция переноса для использования после сложения и умножения. 
 inline void BigUint::carry(ContainerT& container, size_t index)
 {
     assert(0 <= index && index < container.size());
 
-    while (true)
+    auto previousCarry = NumericT();
+
+    do
     {
+        // Берем верхние разряды для переноса в следующий.
         auto higher = getHigherHalf(container, index);
-
-        if (!higher)
-            break;
-
         clearHigherHalf(container, index);
 
-        if (index != container.size())
-            container[index] += higher;
-        else
-            container.push_back(higher);
-    }
+        // Увеличиваем разряд на количество для переноса.
+        container[index] += previousCarry;
+
+        // Повторяем начальную процедуру из-за возможного наполнения переноса.
+        higher += getHigherHalf(container, index);
+        clearHigherHalf(container, index);
+
+        // Устанавливаем перенос для следующего разряда.
+        previousCarry = higher;
+
+    } while ((++index < container.size()) && previousCarry);
+
+    if (previousCarry)
+        container.push_back(previousCarry);
 }
 
 inline void BigUint::carrySub(ContainerT& container, size_t index)
@@ -139,6 +163,18 @@ inline BigUint::NumericT BigUint::getHigherHalf(const ContainerT& container, siz
     return (container[index] & HighMask) >> (BitSize / 2);
 }
 
+inline void BigUint::multiply(ContainerT& container, NumericT number)
+{
+    std::for_each(
+        container.begin(),
+        container.end(), 
+        [](auto& x) { x *= number; }
+    );
+
+    for (size_t i = 0; i < container.size(); ++i)
+        carry(container, i);
+}
+
 bool operator<(const BigUint& lhs, const BigUint& rhs) noexcept
 {
     if (lhs.data_.size() < rhs.data_.size())
@@ -153,4 +189,24 @@ bool operator<(const BigUint& lhs, const BigUint& rhs) noexcept
     {
         return false;
     }
+}
+
+const BigUint operator+(const BigUint& lhs, const BigUint& rhs)
+{
+    return BigUint(lhs) += rhs;
+}
+
+const BigUint operator-(const BigUint & lhs, const BigUint & rhs)
+{
+    return BigUint(lhs) -= rhs;
+}
+
+const BigUint operator*(const BigUint & lhs, const BigUint & rhs)
+{
+    return BigUint(lhs) *= rhs;
+}
+
+const BigUint operator/(const BigUint & lhs, const BigUint & rhs)
+{
+    return BigUint(lhs) /= rhs;
 }

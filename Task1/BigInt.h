@@ -1,13 +1,13 @@
 #pragma once
 
-#include <cassert>
-
 #include <type_traits>
-#include <utility>
 
 class BigUint
 {
 public:
+    using NumericT = unsigned long long;
+    using ContainerT = std::vector<NumericT>;
+
     constexpr BigUint();
 
     friend bool operator<(const BigUint& lhs, const BigUint& rhs) noexcept;
@@ -20,8 +20,6 @@ public:
     inline void swap(BigUint other);
 
 private:
-    using NumericT = unsigned long long;
-    using ContainerT = std::vector<NumericT>;
     static_assert(std::is_arithmetic_v<NumericT>, "Неверный значимый тип.");
 
     static constexpr size_t BitSize = sizeof(NumericT) * 8;
@@ -32,7 +30,12 @@ private:
     inline static void carrySub(ContainerT& container, size_t index);
     inline static void clearHigherHalf(ContainerT& container, size_t index);
     inline static NumericT getHigherHalf(const ContainerT& container, size_t number) noexcept;
+    inline static void multiply(ContainerT& container, NumericT number);
 
     ContainerT data_;
 };
 
+const BigUint operator+(const BigUint& lhs, const BigUint& rhs);
+const BigUint operator-(const BigUint& lhs, const BigUint& rhs);
+const BigUint operator*(const BigUint& lhs, const BigUint& rhs);
+const BigUint operator/(const BigUint& lhs, const BigUint& rhs);
