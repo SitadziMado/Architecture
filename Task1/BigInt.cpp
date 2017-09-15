@@ -1,10 +1,6 @@
 #include "stdafx.h"
 #include "BigInt.h"
 
-BigUint::BigUint()
-{
-}
-
 BigUint& BigUint::operator+=(const BigUint& rhs)
 {
     BigUint lhs(*this);

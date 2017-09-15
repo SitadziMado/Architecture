@@ -8,7 +8,7 @@
 class BigUint
 {
 public:
-    constexpr BigUint();
+	BigUint() {}
 
     friend bool operator<(const BigUint& lhs, const BigUint& rhs) noexcept;
 
@@ -17,12 +17,12 @@ public:
     BigUint& operator*=(const BigUint& rhs);
     BigUint& operator/=(const BigUint& rhs);
 
-    inline void swap(BigUint other);
+    inline void swap(BigUint other) noexcept;
 
 private:
     using NumericT = unsigned long long;
     using ContainerT = std::vector<NumericT>;
-    static_assert(std::is_arithmetic_v<NumericT>, "Неверный значимый тип.");
+    static_assert(std::is_arithmetic<NumericT>::value, "Неверный значимый тип.");
 
     static constexpr size_t BitSize = sizeof(NumericT) * 8;
     static constexpr NumericT LowMask = ~NumericT() >> (BitSize / 2);
